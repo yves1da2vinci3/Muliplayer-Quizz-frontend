@@ -16,7 +16,9 @@ function RankingScreen({socket}) {
       }
     })
   })
-  
+  function closeCurrentTab() {
+    window.close();
+  }
   return (
     <div className='h-screen bg-slate-50 items-center gap-y-2 flex-col justify-center flex'>
       <div className='flex items-center self-center' >
@@ -41,7 +43,7 @@ function RankingScreen({socket}) {
        </ul>
         {/* Button to go */}
         <Button className='bg-blue-500 h-[3rem]' onClick={
-          ()=> navigate("/")
+         closeCurrentTab
         }>Close the game</Button>
 
       </div>

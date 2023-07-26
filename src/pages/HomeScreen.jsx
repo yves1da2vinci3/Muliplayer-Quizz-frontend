@@ -119,7 +119,7 @@ function HomeScreen({socket}) {
     <div className='h-screen font-[poppins] p-4 flex flex-col  md:grid md:grid-cols-2' >
      
       {/* Name */}
-      <Modal size="lg" title="Enter Your Name" opened={NameOpen} onClose={NameCloseFunc} centered >
+      <Modal size="lg" title="Enter Your Name" opened={NameOpen}  centered >
             <div className="h-[10rem] flex justify-between p-4 flex-col " >
          <TextInput onChange={(e ) => setName(e.target.value)} placeholder='your name' />
          <Button onClick={closeNameModal} className='bg-blue-400 h-[2.5rem] mt-4' >Save</Button>

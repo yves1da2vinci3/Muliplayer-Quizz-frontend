@@ -1,74 +1,78 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Avatar, Badge, Button } from '@mantine/core';
 import Timer from '../assets/chronometer.png';
 import { useNavigate } from 'react-router-dom/dist/umd/react-router-dom.development';
 import { QuizzContext } from '../context/QuizzContext';
 
 function QuizzRoom({ socket }) {
-  // Sample user data, you can replace it with actual data received from the server
-  const navigate = useNavigate()
-
-
-  // State to keep track of the user's answer
   const [userAnswer, setUserAnswer] = useState(null);
- const [usersAnswered, setUsersAnswered] = useState([])
+  const [usersAnswered, setUsersAnswered] = useState([]);
+  const navigate = useNavigate();
+
   // Function to handle user's answer selection
   const handleAnswerSelection = (answer) => {
     setUserAnswer(answer);
     // You can emit the user's answer to the server using the socket here
-    socket.emit('userAnswer', { roomId: localStorage.getItem("roomId"), answer: answer, name: localStorage.getItem("name") });
+    socket.emit('userAnswer', {
+      roomId: localStorage.getItem('roomId'),
+      answer: answer,
+      name: localStorage.getItem('name'),
+    });
   };
 
-  const [Question,setQuestion] = useState({options : []})
-  const [timer,setTimer] = useState(0)
-  const Room = JSON.parse(localStorage.getItem("room")) 
-  useEffect(()=>{
-    
-    // Handle the First Question
-    socket.on("firstQuestion",(data)=>{
-      if(data.roomId === localStorage.getItem("roomId")){
-        setQuestion(data.question)
-        setTimer(15)
+  const [Question, setQuestion] = useState({ options: [] });
+  const [timer, setTimer] = useState(20);
+  const Room = JSON.parse(localStorage.getItem('room'));
 
-        setInterval(()=>{
-          setTimer(timer-1)
-        },1000)
-      }
+  // Ref to hold the interval ID for the timer
+  const timerIntervalRef = useRef(null);
 
-    })
+  useEffect(() => {
 
-    // Handlet NextQustion
     socket.on('nextQuestion', (data) => {
       if (data.roomId === localStorage.getItem('roomId')) {
+        clearInterval(timerIntervalRef.current); // Clear the previous timer interval
         setQuestion(data.question);
         setUsersAnswered([]);
-        setTimer(15);
-
-        const intervalId = setInterval(() => {
-          setTimer((prevTimer) => prevTimer - 1);
-        }, 1000);
-
-        // Clear the interval when the component unmounts
-        return () => clearInterval(intervalId);
+        setUserAnswer("")
+        setTimer(20); // Reset timer to 20 seconds
+        startTimer();
       }
     });
-    // Handler User Answered
-    socket.on("userAnswered",(data)=>{
-      if(data.roomId === localStorage.getItem("roomId")){
-    setUsersAnswered(userAnd => [...userAnd, data.name]);
-      
-      }
 
-    })
-    // Handler Game End
-    socket.on("gameEnd",(data)=>{
-      if(data.roomId === localStorage.getItem("roomId")){
-        navigate("/ranking")
+    socket.on('userAnswered', (data) => {
+      if (data.roomId === localStorage.getItem('roomId')) {
+        setUsersAnswered((userAnd) => [...userAnd, data.name]);
       }
-    })
-    
-  },[])
-  console.log(Room)
+    });
+
+    socket.on('gameEnd', (data) => {
+      if (data.roomId === localStorage.getItem('roomId')) {
+        navigate('/ranking');
+      }
+    });
+
+    // Clean up the timer interval when the component unmounts
+    return () => {
+      clearInterval(timerIntervalRef.current);
+    };
+  }, []);
+
+  const startTimer = () => {
+    timerIntervalRef.current = setInterval(() => {
+      setTimer((prevTimer) => prevTimer - 1);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    if (timer <= 0) {
+      clearInterval(timerIntervalRef.current);
+      socket.emit('nextQuestion', {
+        roomId: localStorage.getItem('roomId'),
+      });
+      setTimer(20); // Reset timer to 20 seconds
+    }
+  }, [timer]);
   return (
     <div className='h-screen bg-white flex '>
       {/* Group a gacuhe */}
@@ -87,7 +91,7 @@ function QuizzRoom({ socket }) {
       <div className='bg-slate-50 p-2 pt-5 flex flex-1 flex-col'>
         <div className='flex items-center self-center'>
           <Avatar size={60} src={Timer} />
-          <h1 className='font-semibold ml-4 tracking-wider italic'>{`00:${timer.toString()}`}</h1>
+          <h1 className='font-semibold ml-4 tracking-wider italic'>{`00:${timer.toString().length>0 ? timer.toString() : "0"+timer.toString()}`}</h1>
         </div>
         {/* Card pour la question */}
         <div className='h-[20rem] bg-white w-full mt-[10rem] drop-shadow-lg flex flex-col rounded-lg p-10'>
@@ -105,8 +109,8 @@ function QuizzRoom({ socket }) {
             {Question?.options.map((_, index) => (
               <Button
                 key={index}
-                className={`bg-blue-500 w-[8rem] ${
-                  userAnswer === index ? 'bg-blue-600' : ''
+                className={`w-[8rem] ${
+                  userAnswer === index ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
                 onClick={() => handleAnswerSelection(index)}
               >
