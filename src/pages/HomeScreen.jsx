@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import CodeImg from '../assets/QuizzImg.png'
 import Coding from '../assets/coding.png'
 import Math from '../assets/calculator.png'
@@ -7,40 +7,136 @@ import story from '../assets/napoleon.png'
 import Anime from '../assets/otaku.png'
 import Mode from '../assets/dress.png'
 import { useDisclosure } from '@mantine/hooks';
-import { Modal, Button, Group } from '@mantine/core';
-function HomeScreen() {
+import { Modal, Button, Group, TextInput, LoadingOverlay } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import generateKey from '../utils/generateKey'
+import { useNavigate } from 'react-router-dom/dist/umd/react-router-dom.development'
+function HomeScreen({socket}) {
+  const Types = [
+    {
+      id : 1,
+      name : "Programmation",
+      img : Coding
+    },
+    {
+      id : 2,
+      name : "Mathematique",
+      img : Math
+    },
+    {
+      id : 3,
+      name : "Sport",
+      img : sport
+    },
+    {
+      id : 4,
+      name : "Anime",
+      img : Anime
+    },
+    {
+      id : 5,
+      name : "Histoire",
+      img : story
+    },
+    {
+      id : 6,
+      name : "Mode",
+      img : Mode
+    },
+  ]
+  const inputRef = useRef(null)
     const [opened, { open, close }] = useDisclosure(false);
+    const [NameOpen, { open :NameOpenFunc, close : NameCloseFunc }] = useDisclosure(true);
+    const [name,setName] = useState("")
+    const [roomId,setRoomId] = useState("")
+    const [visible, { toggle }] = useDisclosure(false);
+   const navigate = useNavigate()
+    const closeNameModal = () => { 
+      if(name.length == 0){
+        notifications.show({
+          title: 'Name input Feedback',
+          color : "red",
+          message: 'Please enter a name',
+        })
+      }else{
+        NameCloseFunc()
+      }
+      }
+      // Initialize Socket Handler
+     const HandlerRoomCreation = (type) => { 
+      toggle()
+      const RoomId = generateKey()
+      socket.emit('createRoom',{
+        name : name,
+        roomId : RoomId,
+        type : type,
+      })
+      socket.on("feedbackCreatingRoom",(data)=> {
+        if(data.status === "success"){
+          notifications.show({
+            title: 'Feeback About creating room',
+            color : "green",
+            message: 'Your room has been created',
+          })
+          localStorage.removeItem("roomId")
+          localStorage.removeItem("name")
+          localStorage.setItem("roomId",RoomId)
+          localStorage.setItem("name",name)
+          navigate("/waiting")
+        }
+      })
+      }
+      // Handle Join
+      const HandlerRoomJoin = () => {
+        console.log("click on join button");
+        socket.emit("joinRoom", {
+          roomId: inputRef.current.value,
+          name,
+        });
+      
+        socket.on("feedbackJoiningRoom", (data) => {
+          if (data.status === "success") {
+            console.log("working");
+            // Update the roomId state variable with the user input
+            setRoomId(inputRef.current.value);
+      
+            localStorage.removeItem("roomId");
+            localStorage.removeItem("name");
+            localStorage.setItem("roomId", inputRef.current.value); // Use inputRef.current.value here
+            localStorage.setItem("name", name);
+            navigate("/waiting");
+          } else {
+            notifications.show({
+              title: "Feedback About Joining room",
+              color: "red",
+              message: `${data.message}`,
+            });
+          }
+        });
+      };
+      
   return (
     <div className='h-screen font-[poppins] p-4 flex flex-col  md:grid md:grid-cols-2' >
+     
+      {/* Name */}
+      <Modal size="lg" title="Enter Your Name" opened={NameOpen} onClose={NameCloseFunc} centered >
+            <div className="h-[10rem] flex justify-between p-4 flex-col " >
+         <TextInput onChange={(e ) => setName(e.target.value)} placeholder='your name' />
+         <Button onClick={closeNameModal} className='bg-blue-400 h-[2.5rem] mt-4' >Save</Button>
+            </div>
+          </Modal>
         {/* Choose quizz modal */}
         <Modal size="lg" opened={opened} centered onClose={close} title="Choose the Quizz Category">
+        <LoadingOverlay visible={visible} overlayBlur={2} />
         <div className='h-[24rem]   flex-col flex p-4  ' >
                   {/* actions card */}
                   <div className='flex gap-4  justify-center flex-wrap '> 
-      <div onClick={()=> setSeeCommentModal(true)}  className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-5 w-[10rem] bg-white' >
-        <img src={Coding} className="h-[5rem] " />
-        <p className='text-center font-bold' >Programmation</p>
-      </div>
-      <div  onClick={()=> setSendingNotification(true)}  className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-2 w-[10rem] bg-white' >
-        <img src={Math} className="h-[5rem] " />
-        <p className='text-center font-bold' >Mathematique</p>
-      </div>
-      <div onClick={()=> setModifyUserModalStatus(true)}  className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-2 w-[10rem] bg-white' >
-        <img src={sport} className="h-[5rem] " />
-        <p className='text-center font-bold' >Sport</p>
-      </div>
-      <div onClick={()=> setReservationModal(true)} className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-5 w-[10rem] bg-white' >
-        <img src={Anime} className="h-[5rem] " />
-        <p className='text-center font-bold text-sm' >Anime</p>
-      </div>
-      <div onClick={()=> setSeePaymentModal(true)} className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-5 w-[10rem] bg-white' >
-        <img src={story} className="h-[5rem] " />
-        <p className='text-center font-bold text-sm' >Histoire</p>
-      </div>
-      <div onClick={()=> setSeePaymentModal(true)} className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-5 w-[10rem] bg-white' >
-        <img src={Mode} className="h-[5rem] " />
-        <p className='text-center font-bold text-sm' >Mode</p>
-      </div>
+      
+      {Types.map((type,index)=> (<div   key={type.name + "dsdsdsds"} onClick={()=> HandlerRoomCreation(type.id)}  className=' cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-2 w-[10rem] bg-white' >
+        <img src={type.img} className="h-[5rem] " />
+        <p className='text-center font-bold' >{type.name}</p>
+      </div>))}
+    
     
       </div>
           </div>
@@ -58,8 +154,8 @@ function HomeScreen() {
                 <h1>Or</h1>
                 {/* Join an  current   sesssion */}
                 <div className='flex flex-col md:flex-row items-center w-[27rem] gap-x-4    '>
-                    <input  className='border-b-2 border-green-400 bg-gray-50 outline-none px-2 flex-1 h-[2.5rem]' />
-                    <Button className='bg-blue-500 h-[3rem]' onClick={open}>Join a session</Button>
+                    <input ref={inputRef}  className='border-b-2 border-green-400 bg-gray-50 outline-none px-2 flex-1 h-[2.5rem]' />
+                    <Button className='bg-blue-500 h-[3rem]' onClick={HandlerRoomJoin}>Join a session</Button>
                 </div>
            
             </div>
