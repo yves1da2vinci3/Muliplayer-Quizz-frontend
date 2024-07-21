@@ -8,7 +8,7 @@ import QuizzRoom from './pages/QuizzRoom'
 import socketIO from 'socket.io-client';
 import QuizzProvider from './context/QuizzContext'
 // const socket = socketIO.connect('http://localhost:3000');
-const socket = socketIO.connect('https://quizzappserver.onrender.com');
+const socket = socketIO.connect(import.meta.env.VITE_BACKEND_URL);
 
 function App() {
 
