@@ -11,6 +11,7 @@ import { Modal, Button, Group, TextInput, LoadingOverlay } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import generateKey from "../utils/generateKey";
 import { useNavigate } from "react-router-dom/dist/umd/react-router-dom.development";
+
 function HomeScreen({ socket }) {
   const Types = [
     {
@@ -53,8 +54,9 @@ function HomeScreen({ socket }) {
   const [roomId, setRoomId] = useState("");
   const [visible, { toggle }] = useDisclosure(false);
   const navigate = useNavigate();
+
   const closeNameModal = () => {
-    if (name.length == 0) {
+    if (name.length === 0) {
       notifications.show({
         title: "Name input Feedback",
         color: "red",
@@ -64,7 +66,7 @@ function HomeScreen({ socket }) {
       NameCloseFunc();
     }
   };
-  // Initialize Socket Handler
+
   const HandlerRoomCreation = (type) => {
     toggle();
     const RoomId = generateKey();
@@ -76,7 +78,7 @@ function HomeScreen({ socket }) {
     socket.on("feedbackCreatingRoom", (data) => {
       if (data.status === "success") {
         notifications.show({
-          title: "Feeback About creating room",
+          title: "Feedback About creating room",
           color: "green",
           message: "Your room has been created",
         });
@@ -88,7 +90,7 @@ function HomeScreen({ socket }) {
       }
     });
   };
-  // Handle Join
+
   const HandlerRoomJoin = () => {
     console.log("click on join button");
     socket.emit("joinRoom", {
@@ -99,12 +101,10 @@ function HomeScreen({ socket }) {
     socket.on("feedbackJoiningRoom", (data) => {
       if (data.status === "success") {
         console.log("working");
-        // Update the roomId state variable with the user input
         setRoomId(inputRef.current.value);
-
         localStorage.removeItem("roomId");
         localStorage.removeItem("name");
-        localStorage.setItem("roomId", inputRef.current.value); // Use inputRef.current.value here
+        localStorage.setItem("roomId", inputRef.current.value);
         localStorage.setItem("name", name);
         navigate("/waiting");
       } else {
@@ -118,55 +118,61 @@ function HomeScreen({ socket }) {
   };
 
   return (
-    <div className="h-screen font-[poppins] p-4 flex flex-col  md:grid md:grid-cols-2">
-      {/* Name */}
+    <div className="min-h-screen font-[poppins] p-4 flex flex-col lg:grid lg:grid-cols-2 gap-8">
+      {/* Name Modal */}
       <Modal size="lg" title="Enter Your Name" opened={NameOpen} centered>
-        <div className="h-[10rem] flex justify-between p-4 flex-col ">
+        <div className="flex flex-col justify-between p-4 space-y-4">
           <TextInput
             onChange={(e) => setName(e.target.value)}
-            placeholder="your name"
+            placeholder="Your name"
           />
           <Button
             onClick={closeNameModal}
-            className="bg-blue-400 h-[2.5rem] mt-4"
+            className="bg-blue-400 h-10 w-full sm:w-auto"
           >
             Save
           </Button>
         </div>
       </Modal>
-      {/* Choose quizz modal */}
+
+      {/* Quiz Category Modal */}
       <Modal
         size="lg"
         opened={opened}
         centered
         onClose={close}
-        title="Choose the Quizz Category"
+        title="Choose the Quiz Category"
       >
         <LoadingOverlay visible={visible} overlayBlur={2} />
-        <div className="h-[24rem]   flex-col flex p-4  ">
-          {/* actions card */}
-          <div className="flex gap-4  justify-center flex-wrap ">
-            {Types.map((type, index) => (
+        <div className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 justify-center">
+            {Types.map((type) => (
               <div
-                key={type.name + "dsdsdsds"}
+                key={type.name}
                 onClick={() => HandlerRoomCreation(type.id)}
-                className=" cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-[10rem] gap-y-3 items-center flex-col justify-center flex p-2 w-[10rem] bg-white"
+                className="cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-32 sm:h-40 flex flex-col items-center justify-center p-2 bg-white transition-all duration-300 ease-in-out transform hover:scale-105"
               >
-                <img src={type.img} className="h-[5rem] " />
-                <p className="text-center font-bold">{type.name}</p>
+                <img
+                  src={type.img}
+                  className="h-16 sm:h-20 mb-2"
+                  alt={type.name}
+                />
+                <p className="text-center font-bold text-sm sm:text-base">
+                  {type.name}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </Modal>
-      {/* Information relative to the platform and the connection */}
-      <div className="h-full  items-start flex-col gap-y-6 pt-10 capitalize  justify-center p-4 flex">
-        <h1 className="text-2xl font-semibold">
+
+      <div className="flex flex-col justify-center space-y-6 lg:pr-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold">
           Welcome to your{" "}
-          <span className="text-blue-500">online Quizz multiplayer game</span>{" "}
+          <span className="text-blue-500">online Quiz multiplayer game</span>
         </h1>
-        <p className="text-gray-500 tracking-tighter ">
-          Online Quizz Multiplayer Game is an exciting and interactive game that
+        <p className="text-gray-500 tracking-tighter text-sm sm:text-base">
+          Online Quiz Multiplayer Game is an exciting and interactive game that
           allows players to compete with each other in real-time. The game
           consists of a series of questions that test the players' knowledge in
           various categories such as history, science, pop culture, and more.
@@ -180,32 +186,35 @@ function HomeScreen({ socket }) {
           questions are randomly generated, ensuring that the game is always
           fresh and exciting. The game can be played for fun or with real
           prizes, adding another level of excitement for players. Overall,
-          Online Quizz Multiplayer Game is an entertaining and educational
+          Online Quiz Multiplayer Game is an entertaining and educational
           experience that combines competition and knowledge in a fun and
           engaging way.
         </p>
-        <div className="flex  flex-col md:flex-row h-20  gap-x-6 w-full items-center">
-          {/* Create a create boutton sesssion */}
-
-          <Button className="bg-blue-500 h-[3rem]" onClick={open}>
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <Button className="bg-blue-500 h-12 w-full sm:w-auto" onClick={open}>
             Create a session
           </Button>
-          <h1>Or</h1>
-          {/* Join an  current   sesssion */}
-          <div className="flex flex-col md:flex-row items-center w-[27rem] gap-x-4    ">
+          <h1 className="text-center sm:text-left">Or</h1>
+          <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto space-y-4 sm:space-y-0 sm:space-x-4">
             <input
               ref={inputRef}
-              className="border-b-2 border-green-400 bg-gray-50 outline-none px-2 flex-1 h-[2.5rem]"
+              className="border-b-2 border-green-400 bg-gray-50 outline-none px-2 h-12 w-full sm:w-48"
             />
-            <Button className="bg-blue-500 h-[3rem]" onClick={HandlerRoomJoin}>
+            <Button
+              className="bg-blue-500 h-12 w-full sm:w-auto"
+              onClick={HandlerRoomJoin}
+            >
               Join a session
             </Button>
           </div>
         </div>
       </div>
-      {/* Image */}
-      <div className="h-full items-center justify-center flex ">
-        <img src={CodeImg} />
+      <div className="flex items-center justify-center mt-8 lg:mt-0">
+        <img
+          src={CodeImg}
+          className="max-w-full h-auto"
+          alt="Quiz illustration"
+        />
       </div>
     </div>
   );
