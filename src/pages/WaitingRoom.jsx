@@ -20,6 +20,7 @@ import animationData from "../assets/animation.json";
 import { IoMdSettings } from "react-icons/io";
 import { Types } from "./HomeScreen";
 import { HiOutlineSaveAs } from "react-icons/hi";
+import { useClipboard } from "@mantine/hooks";
 // Lottie config
 const defaultOptions = {
   loop: true,
@@ -31,6 +32,7 @@ const defaultOptions = {
 };
 
 function WaitingRoom({ socket }) {
+  const clipobard = useClipboard({ timeout: 1000 });
   const navigate = useNavigate();
   const [room, setRoomState] = useState({ participants: [] });
   const [modalOpened, setModalOpened] = useState(false);
@@ -60,6 +62,7 @@ function WaitingRoom({ socket }) {
 
     // Game Start
     socket.on("gameStart", (data) => {
+      setModalOpened(false);
       if (data.roomId === localStorage.getItem("roomId")) {
         navigate("/quizz");
       }
@@ -74,6 +77,7 @@ function WaitingRoom({ socket }) {
 
   // Launch The Game
   const LaunchGame = () => {
+    setModalOpened(true);
     socket.emit("gameStart", {
       roomId: localStorage.getItem("roomId"),
     });
@@ -100,7 +104,7 @@ function WaitingRoom({ socket }) {
                     withArrow
                     position="right"
                   >
-                    <ActionIcon color={copied ? "teal" : "gray"} onClick={()=>copy()}>
+                    <ActionIcon color={copied ? "teal" : "gray"} onClick={copy}>
                       <IoCopyOutline className="cursor-pointer" />
                     </ActionIcon>
                   </Tooltip>
