@@ -59,6 +59,7 @@ function HomeScreen({ socket }) {
         });
         localStorage.setItem("roomId", RoomId);
         localStorage.setItem("name", name);
+        localStorage.setItem("roomType", type);
         navigate("/waiting");
       }
       setVisible(false);
