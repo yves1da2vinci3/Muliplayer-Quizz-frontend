@@ -2,116 +2,81 @@ import React, { useEffect, useRef, useState } from "react";
 import CodeImg from "../assets/QuizzImg.png";
 import Coding from "../assets/coding.png";
 import Math from "../assets/calculator.png";
-import sport from "../assets/sport.png";
-import story from "../assets/napoleon.png";
+import Sport from "../assets/sport.png";
+import Story from "../assets/napoleon.png";
 import Anime from "../assets/otaku.png";
 import Mode from "../assets/dress.png";
 import { useDisclosure } from "@mantine/hooks";
-import { Modal, Button, Group, TextInput, LoadingOverlay } from "@mantine/core";
+import { Modal, Button, TextInput, LoadingOverlay } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import generateKey from "../utils/generateKey";
-import { useNavigate } from "react-router-dom/dist/umd/react-router-dom.development";
+import { useNavigate } from "react-router-dom";
+
+export const Types = [
+  { id: 1, name: "Programming", img: Coding },
+  { id: 2, name: "Mathematics", img: Math },
+  { id: 3, name: "Sports", img: Sport },
+  { id: 4, name: "Anime", img: Anime },
+  { id: 5, name: "History", img: Story },
+  { id: 6, name: "Fashion", img: Mode },
+];
 
 function HomeScreen({ socket }) {
-  const Types = [
-    {
-      id: 1,
-      name: "Programming",
-      img: Coding,
-    },
-    {
-      id: 2,
-      name: "Mathematics",
-      img: Math,
-    },
-    {
-      id: 3,
-      name: "Sports",
-      img: sport,
-    },
-    {
-      id: 4,
-      name: "Anime",
-      img: Anime,
-    },
-    {
-      id: 5,
-      name: "History",
-      img: story,
-    },
-    {
-      id: 6,
-      name: "Fashion",
-      img: Mode,
-    },
-  ];
-
   const inputRef = useRef(null);
-  const [opened, { open, close }] = useDisclosure(false);
-  const [NameOpen, { open: NameOpenFunc, close: NameCloseFunc }] =
-    useDisclosure(true);
   const [name, setName] = useState("");
-  const [roomId, setRoomId] = useState("");
-  const [visible, { toggle }] = useDisclosure(false);
+  const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [nameModalOpened, { open: openNameModal, close: closeNameModal }] =
+    useDisclosure(true);
 
-  const closeNameModal = () => {
-    if (name.length === 0) {
+  useEffect(() => {
+    openNameModal();
+  }, [openNameModal]);
+
+  const handleNameModalClose = () => {
+    if (!name) {
       notifications.show({
-        title: "Name input Feedback",
+        title: "Name Input Feedback",
         color: "red",
         message: "Please enter a name",
       });
     } else {
-      NameCloseFunc();
+      closeNameModal();
     }
   };
 
-  const HandlerRoomCreation = (type) => {
-    toggle();
+  const handleRoomCreation = (type) => {
+    setVisible(true);
     const RoomId = generateKey();
-    socket.emit("createRoom", {
-      name: name,
-      roomId: RoomId,
-      type: type,
-    });
+    socket.emit("createRoom", { name, roomId: RoomId, type });
     socket.on("feedbackCreatingRoom", (data) => {
       if (data.status === "success") {
         notifications.show({
-          title: "Feedback About creating room",
+          title: "Room Creation Feedback",
           color: "green",
           message: "Your room has been created",
         });
-        localStorage.removeItem("roomId");
-        localStorage.removeItem("name");
         localStorage.setItem("roomId", RoomId);
         localStorage.setItem("name", name);
         navigate("/waiting");
       }
+      setVisible(false);
     });
   };
 
-  const HandlerRoomJoin = () => {
-    console.log("click on join button");
-    socket.emit("joinRoom", {
-      roomId: inputRef.current.value,
-      name,
-    });
-
+  const handleRoomJoin = () => {
+    socket.emit("joinRoom", { roomId: inputRef.current.value, name });
     socket.on("feedbackJoiningRoom", (data) => {
       if (data.status === "success") {
-        console.log("working");
-        setRoomId(inputRef.current.value);
-        localStorage.removeItem("roomId");
-        localStorage.removeItem("name");
         localStorage.setItem("roomId", inputRef.current.value);
         localStorage.setItem("name", name);
         navigate("/waiting");
       } else {
         notifications.show({
-          title: "Feedback About Joining room",
+          title: "Room Joining Feedback",
           color: "red",
-          message: `${data.message}`,
+          message: data.message,
         });
       }
     });
@@ -120,15 +85,22 @@ function HomeScreen({ socket }) {
   return (
     <div className="min-h-screen font-[poppins] p-4 flex flex-col lg:grid lg:grid-cols-2 gap-8">
       {/* Name Modal */}
-      <Modal size="lg" title="Enter Your Name" opened={NameOpen} centered>
-        <div className="flex flex-col justify-between p-4 space-y-4">
+      <Modal
+        size="lg"
+        title="Enter Your Name"
+        opened={nameModalOpened}
+        centered
+        onClose={closeNameModal}
+      >
+        <div className="flex flex-col p-4 space-y-4">
           <TextInput
+            value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
           />
           <Button
-            onClick={closeNameModal}
             className="bg-blue-400 h-10 w-full sm:w-auto"
+            onClick={handleNameModalClose}
           >
             Save
           </Button>
@@ -145,12 +117,12 @@ function HomeScreen({ socket }) {
       >
         <LoadingOverlay visible={visible} overlayBlur={2} />
         <div className="p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 justify-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {Types.map((type) => (
               <div
-                key={type.name}
-                onClick={() => HandlerRoomCreation(type.id)}
-                className="cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-32 sm:h-40 flex flex-col items-center justify-center p-2 bg-white transition-all duration-300 ease-in-out transform hover:scale-105"
+                key={type.id}
+                onClick={() => handleRoomCreation(type.id)}
+                className="cursor-pointer rounded-lg hover:bg-blue-300 drop-shadow-md h-32 sm:h-40 flex flex-col items-center justify-center p-2 bg-white transition-all duration-300 transform hover:scale-105"
               >
                 <img
                   src={type.img}
@@ -199,10 +171,11 @@ function HomeScreen({ socket }) {
             <input
               ref={inputRef}
               className="border-b-2 border-green-400 bg-gray-50 outline-none px-2 h-12 w-full sm:w-48"
+              placeholder="Room ID"
             />
             <Button
               className="bg-blue-500 h-12 w-full sm:w-auto"
-              onClick={HandlerRoomJoin}
+              onClick={handleRoomJoin}
             >
               Join a session
             </Button>
